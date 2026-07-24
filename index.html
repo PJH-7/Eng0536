@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0b11">
+<title>배경 이미지 생성기</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📷</text></svg>">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  margin:0;padding:18px 14px 40px;max-width:560px;margin:0 auto;
+  background:#0a0b11;color:#e4e8f2;
+  font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.head{text-align:center;margin-bottom:18px}
+.head .tag{font-size:10px;color:#7a8fd8;font-weight:700;letter-spacing:.16em;margin-bottom:6px}
+.head h1{
+  font-size:21px;font-weight:900;margin:0;
+  background:linear-gradient(120deg,#6fa8dc,#c98fd0,#d4b062);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.head p{font-size:11.5px;color:#7a8598;margin:6px 0 0;line-height:1.6}
+
+.card{background:#12141d;border:1px solid #262b3a;border-radius:12px;padding:14px;margin-bottom:12px}
+label{display:block;font-size:12px;font-weight:700;color:#9aa6bd;margin-bottom:7px}
+.hint{font-size:10.5px;color:#5f6a80;margin:6px 0 0;line-height:1.65}
+
+textarea,input{
+  width:100%;background:#080a10;border:1px solid #262b3a;border-radius:8px;
+  color:#e4e8f2;font-size:14px;padding:11px;font-family:inherit;
+  line-height:1.75;outline:none;
+}
+textarea{min-height:210px;resize:vertical}
+textarea:focus,input:focus{border-color:#6fa8dc}
+
+.row{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.cnt{font-size:11px;color:#5f6a80}
+.cnt b{color:#6fa8dc}
+.cnt.over b{color:#e0715a}
+
+button{
+  width:100%;padding:15px;border:0;border-radius:10px;
+  background:linear-gradient(120deg,#5a7fd0,#8f6fc0);
+  color:#fff;font-size:15px;font-weight:800;font-family:inherit;
+  cursor:pointer;margin-top:4px;
+}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.sec{background:#1a1e2a;color:#9aa6bd;font-size:12.5px;padding:11px;font-weight:600;margin-top:8px}
+
+#msg{
+  display:none;margin-top:12px;padding:12px;border-radius:9px;
+  font-size:12.5px;line-height:1.7;white-space:pre-wrap;
+}
+#msg.ok{display:block;background:#0f2018;border:1px solid #2d6a4a;color:#7fd4a4}
+#msg.err{display:block;background:#22110f;border:1px solid #6a3630;color:#e08a7a}
+#msg.wait{display:block;background:#101828;border:1px solid #2d4a6a;color:#7fb0d4}
+
+.ex{margin-top:10px}
+.ex-t{font-size:10.5px;color:#5f6a80;margin-bottom:6px}
+.chip{
+  display:inline-block;background:#0c0e15;border:1px solid #262b3a;
+  border-radius:20px;padding:6px 11px;font-size:11px;color:#9aa6bd;
+  margin:0 5px 5px 0;cursor:pointer;
+}
+.chip:active{border-color:#6fa8dc;color:#6fa8dc}
+.foot{text-align:center;margin-top:20px;font-size:10px;color:#4a5265;line-height:1.8}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="tag">N8N · GPT-IMAGE-1</div>
+  <h1>배경 이미지 생성기</h1>
+  <p>장소명을 적으면 실사 배경이 텔레그램으로 전송됩니다<br>9:16 세로 · 중경+후경 · 사람 없음</p>
+</div>
+
+<div class="card">
+  <label>장소 목록 (한 줄에 하나, 최대 10개)</label>
+  <textarea id="places" placeholder="여수 밤바닷가 앞
+부산 해운대 흐린 날 오후
+폐허가 된 지하철 역사
+안개 낀 침엽수림 호숫가"></textarea>
+  <div class="row">
+    <span class="cnt" id="cnt"><b>0</b> / 10</span>
+    <span class="cnt" id="est">예상 약 $0.00</span>
+  </div>
+  <p class="hint">분위기를 덧붙이려면 <b>|</b> 뒤에 적으세요<br>예) 여수 밤바닷가 앞 | 비 온 뒤, 젖은 방파제</p>
+
+  <div class="ex">
+    <div class="ex-t">탭하면 추가됩니다</div>
+    <span class="chip">여수 밤바닷가 앞</span>
+    <span class="chip">서울 을지로 골목</span>
+    <span class="chip">제주 오름 능선</span>
+    <span class="chip">교토 사찰 정원</span>
+    <span class="chip">사막 버려진 주유소</span>
+    <span class="chip">폐공장 내부</span>
+  </div>
+</div>
+
+<button id="go">이미지 생성 요청</button>
+<button class="sec" id="clear">입력 비우기</button>
+
+<div id="msg"></div>
+
+<div class="foot">
+  요청 후 텔레그램으로 순차 전송됩니다<br>
+  10장 기준 약 5~10분 소요
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// ★ 설정: n8n Webhook 노드의 Production URL로 교체하세요
+const WEBHOOK_URL = 'https://engineer0536.app.n8n.cloud/webhook/make-bg';
+const MAX = 10;
+const COST_PER_IMAGE = 0.17; // gpt-image-1 high 1024x1536 대략
+// ─────────────────────────────────────────────
+
+const $ = id => document.getElementById(id);
+const ta = $('places'), msg = $('msg');
+
+function lines(){
+  return ta.value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+}
+
+function update(){
+  const n = lines().length;
+  const c = $('cnt');
+  c.innerHTML = '<b>'+n+'</b> / '+MAX;
+  c.className = 'cnt' + (n>MAX ? ' over' : '');
+  $('est').textContent = '예상 약 $' + (Math.min(n,MAX)*COST_PER_IMAGE).toFixed(2);
+}
+ta.addEventListener('input', update);
+
+// 예시 칩
+document.querySelectorAll('.chip').forEach(ch=>{
+  ch.addEventListener('click', ()=>{
+    const cur = ta.value.replace(/\s+$/,'');
+    ta.value = (cur ? cur+'\n' : '') + ch.textContent;
+    update();
+  });
+});
+
+$('clear').addEventListener('click', ()=>{
+  ta.value=''; update(); msg.className=''; msg.textContent='';
+});
+
+function show(type, text){
+  msg.className = type;
+  msg.textContent = text;
+}
+
+$('go').addEventListener('click', async ()=>{
+  const places = lines();
+
+  if (places.length === 0) return show('err','장소를 최소 1개 입력하세요.');
+  if (places.length > MAX)  return show('err','최대 '+MAX+'개까지만 가능합니다. 현재 '+places.length+'개.');
+
+  const btn = $('go');
+  btn.disabled = true;
+  btn.textContent = '전송 중...';
+  show('wait','요청을 보내는 중입니다...');
+
+  try {
+    const res = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ places: places })
+    });
+
+    if (!res.ok) throw new Error('서버 응답 '+res.status);
+    const data = await res.json().catch(()=>({}));
+
+    show('ok',
+      '✅ 접수되었습니다 ('+(data.count || places.length)+'장)\n\n' +
+      '텔레그램으로 순차 전송됩니다.\n' +
+      '완료까지 약 '+Math.ceil(places.length*0.7)+'~'+(places.length)+'분 걸립니다.\n' +
+      '이 화면은 닫으셔도 됩니다.');
+  } catch (err) {
+    show('err','❌ 전송 실패\n'+err.message+'\n\n웹훅 주소와 워크플로우 활성화 상태를 확인하세요.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '이미지 생성 요청';
+  }
+});
+
+update();
+</script>
+</body>
+</html>
