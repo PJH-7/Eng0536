@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0b11">
+<title>이미지 생성기</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;padding:16px 12px 40px;max-width:720px;margin:0 auto;
+  background:#0a0b11;color:#e4e8f2;
+  font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,sans-serif;
+  -webkit-text-size-adjust:100%}
+.head{text-align:center;margin-bottom:16px}
+.head .tag{font-size:10px;color:#7a8fd8;font-weight:700;letter-spacing:.16em;margin-bottom:5px}
+.head h1{font-size:20px;font-weight:900;margin:0;
+  background:linear-gradient(120deg,#6fa8dc,#c98fd0,#d4b062);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.head p{font-size:11px;color:#7a8598;margin:5px 0 0;line-height:1.6}
+
+.card{background:#12141d;border:1px solid #262b3a;border-radius:12px;padding:12px;margin-bottom:12px}
+.card-t{font-size:12px;font-weight:800;color:#9aa6bd;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center}
+.card-t .sub{font-size:10px;font-weight:400;color:#5f6a80}
+
+/* 프리셋 */
+.preset{display:flex;flex-wrap:wrap;gap:6px}
+.pchip{background:#0c0e15;border:1px solid #2d3346;border-radius:18px;padding:7px 12px;
+  font-size:11.5px;color:#9aa6bd;cursor:pointer;font-weight:600}
+.pchip:active,.pchip.on{border-color:#6fa8dc;color:#6fa8dc;background:#0f1626}
+
+/* 매트릭스 */
+.mwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{border:1px solid #262b3a;padding:0;vertical-align:top}
+th{background:#0c0e15;padding:6px;font-size:10px;color:#7a8598}
+th input{width:100%;background:transparent;border:0;color:#8fb4e8;font-size:11px;
+  font-weight:700;text-align:center;font-family:inherit;outline:none;padding:2px}
+td.rl{background:#0c0e15;color:#5f6a80;font-size:10px;text-align:center;
+  width:44px;font-weight:700;padding:4px 2px;white-space:nowrap}
+td textarea{width:100%;min-width:110px;min-height:52px;background:#080a10;border:0;
+  color:#e4e8f2;font-size:11.5px;padding:6px;font-family:inherit;line-height:1.5;
+  resize:vertical;outline:none}
+td textarea:focus{background:#0f1119;box-shadow:inset 0 0 0 1px #6fa8dc}
+tr.common td{background:#0e1524}
+tr.common td.rl{background:#111d33;color:#6fa8dc}
+tr.common textarea{background:#0b1220}
+td.pick{box-shadow:inset 0 0 0 2px #d4a862}
+.rowtog{margin-top:8px;display:flex;gap:8px;align-items:center;font-size:11px;color:#7a8598}
+.rowtog button{background:#1a1e2a;border:1px solid #2d3346;color:#9aa6bd;
+  border-radius:7px;padding:5px 10px;font-size:11px;font-family:inherit;cursor:pointer}
+
+/* 이미지 슬롯 */
+.slots{display:flex;gap:8px}
+.slot{flex:1;aspect-ratio:1;background:#080a10;border:1.5px dashed #2d3346;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
+.slot span{font-size:10px;color:#5f6a80;text-align:center;padding:4px}
+.slot img{width:100%;height:100%;object-fit:cover}
+.slot .x{position:absolute;top:3px;right:3px;background:#000a;color:#fff;border:0;
+  width:20px;height:20px;border-radius:50%;font-size:12px;cursor:pointer;display:none}
+.slot.has .x{display:block}
+.slot.has{border-style:solid;border-color:#3a4560}
+
+textarea.suffix{width:100%;background:#080a10;border:1px solid #262b3a;border-radius:8px;
+  color:#e4e8f2;font-size:12px;padding:9px;font-family:inherit;line-height:1.6;outline:none;min-height:54px}
+textarea.suffix:focus{border-color:#6fa8dc}
+.hint{font-size:10px;color:#5f6a80;margin-top:6px;line-height:1.6}
+
+button.go{width:100%;padding:15px;border:0;border-radius:10px;
+  background:linear-gradient(120deg,#5a7fd0,#8f6fc0);color:#fff;
+  font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;margin-top:4px}
+button.go:disabled{opacity:.45}
+button.sec{width:100%;background:#1a1e2a;color:#9aa6bd;font-size:12px;padding:10px;
+  font-weight:600;margin-top:8px;border:0;border-radius:9px;font-family:inherit;cursor:pointer}
+
+#preview{margin-top:10px;font-size:10.5px;color:#7a8598;line-height:1.7;
+  background:#0c0e15;border:1px solid #262b3a;border-radius:9px;padding:10px;
+  white-space:pre-wrap;max-height:180px;overflow-y:auto;display:none}
+#preview.on{display:block}
+#preview b{color:#8fb4e8}
+
+#msg{display:none;margin-top:12px;padding:12px;border-radius:9px;font-size:12.5px;line-height:1.7;white-space:pre-wrap}
+#msg.ok{display:block;background:#0f2018;border:1px solid #2d6a4a;color:#7fd4a4}
+#msg.err{display:block;background:#22110f;border:1px solid #6a3630;color:#e08a7a}
+#msg.wait{display:block;background:#101828;border:1px solid #2d4a6a;color:#7fb0d4}
+.foot{text-align:center;margin-top:18px;font-size:10px;color:#4a5265;line-height:1.8}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="tag">MATRIX PROMPT · GPT-IMAGE-1</div>
+  <h1>이미지 생성기</h1>
+  <p>요소별로 나눠 5개까지 · 참고 이미지 3개 · 텔레그램 전송</p>
+</div>
+
+<!-- 프리셋 -->
+<div class="card">
+  <div class="card-t">프리셋 <span class="sub">넣을 칸을 탭한 뒤 프리셋 선택</span></div>
+  <div class="preset" id="presets"></div>
+</div>
+
+<!-- 매트릭스 -->
+<div class="card">
+  <div class="card-t">프롬프트 매트릭스 <span class="sub">← 좌우 스크롤 · 열 이름 수정 가능</span></div>
+  <div class="mwrap">
+    <table id="matrix">
+      <thead><tr id="hrow"></tr></thead>
+      <tbody id="brow"></tbody>
+    </table>
+  </div>
+  <div class="rowtog">
+    <span>공통 행의 값은 아래 빈 칸에 자동 적용됩니다</span>
+  </div>
+  <div class="rowtog" style="margin-top:6px">
+    <button id="rmRow">− 행 줄이기</button>
+    <button id="addRow">+ 행 늘리기</button>
+    <span id="rowcnt" style="margin-left:auto"></span>
+  </div>
+</div>
+
+<!-- 이미지 슬롯 -->
+<div class="card">
+  <div class="card-t">참고 이미지 <span class="sub">최대 3개 · 전체 공통 적용</span></div>
+  <div class="slots" id="slots"></div>
+  <p class="hint">이미지를 넣으면 그 스타일·구도를 참고해 생성합니다 (편집 모드). 없으면 프롬프트만으로 생성합니다.</p>
+</div>
+
+<!-- 공통 접미 -->
+<div class="card">
+  <div class="card-t">공통 접미 규격 <span class="sub">모든 프롬프트 끝에 붙음</span></div>
+  <textarea class="suffix" id="suffix">photorealistic, 8K, 9:16 vertical, accurate white balance, no green or teal color cast</textarea>
+  <p class="hint">화풍을 애니로 바꾸면 여기의 photorealistic을 지우세요</p>
+</div>
+
+<button class="sec" id="prev">완성 프롬프트 미리보기</button>
+<div id="preview"></div>
+
+<button class="go" id="go">이미지 생성 요청</button>
+<button class="sec" id="clear">전체 비우기</button>
+<div id="msg"></div>
+
+<div class="foot">요청 후 텔레그램으로 순차 전송 · 5장 약 5분</div>
+
+<script>
+// ───────────────── 설정 ─────────────────
+const WEBHOOK_URL = 'https://engineer0536.app.n8n.cloud/webhook/make-bg';
+const COST = 0.17;
+const COLS_DEFAULT = ['인물 외모','행동·표정','배경','화풍','기타'];
+let ROWS = 5;
+const MAXROWS = 5, MINROWS = 1;
+
+const PRESETS = {
+  '실사': 'photorealistic, hyperrealistic, DSLR photograph, natural lighting',
+  '애니': 'anime style, cel shaded, clean lineart, vibrant colors',
+  '수채화': 'watercolor painting, soft washes, delicate brush strokes',
+  '유화': 'oil painting, rich textured brushwork, classical style',
+  '버드뷰': 'aerial view, bird\'s eye view, top-down angle, high vantage point',
+  '사선뷰': 'three-quarter angle view, dynamic diagonal composition',
+  '눈높이': 'eye-level shot, camera at 150cm, horizontal straight-on angle',
+  '로우앵글': 'low angle shot, looking up, dramatic perspective',
+  '무릎샷': 'knee-up shot, figure cropped at bottom edge, head in upper third',
+  '전신': 'full body shot, entire figure visible, standing',
+  '클로즈업': 'close-up portrait, face and shoulders, shallow depth of field',
+  '회색배경': 'isolated on flat solid medium gray background (#808080), empty background, no props, sharp clean edges'
+};
+
+const $ = id => document.getElementById(id);
+
+// ── 매트릭스 그리기 ──
+const hrow = $('hrow'), brow = $('brow');
+function buildMatrix(){
+  // 헤더
+  hrow.innerHTML = '<th style="width:44px"></th>' +
+    COLS_DEFAULT.map((c,i)=>`<th><input value="${c}" data-col="${i}"></th>`).join('');
+  // 바디: 공통행 + ROWS개
+  let html = '<tr class="common"><td class="rl">공통</td>' +
+    COLS_DEFAULT.map((_,i)=>`<td><textarea data-r="common" data-c="${i}" placeholder="공통값"></textarea></td>`).join('') + '</tr>';
+  for(let r=0;r<ROWS;r++){
+    html += `<tr><td class="rl">${r+1}</td>` +
+      COLS_DEFAULT.map((_,i)=>`<td><textarea data-r="${r}" data-c="${i}"></textarea></td>`).join('') + '</tr>';
+  }
+  brow.innerHTML = html;
+  $('rowcnt').textContent = ROWS + '행';
+}
+buildMatrix();
+
+// ── 마지막으로 탭한 셀 추적 (프리셋 목적지) ──
+let lastCell = null;
+brow.addEventListener('focusin', e => {
+  if (e.target.tagName === 'TEXTAREA') {
+    lastCell = e.target;
+    // 이전 표시 제거 후 현재 셀 표시
+    brow.querySelectorAll('td.pick').forEach(td=>td.classList.remove('pick'));
+    const td = e.target.closest('td'); if(td) td.classList.add('pick');
+  }
+});
+
+// ── 프리셋 ──
+$('presets').innerHTML = Object.keys(PRESETS).map(k=>`<span class="pchip">${k}</span>`).join('');
+$('presets').querySelectorAll('.pchip').forEach(ch=>{
+  ch.addEventListener('click',()=>{
+    // 목적지: 마지막으로 탭한 셀. 없으면 화풍 공통칸을 기본으로.
+    let ta = lastCell;
+    if(!ta){ ta = brow.querySelector('textarea[data-r="common"][data-c="3"]'); }
+    if(ta){
+      ta.value = (ta.value ? ta.value+', ' : '') + PRESETS[ch.textContent];
+      // 목적지 셀 위치 안내
+      const td = ta.closest('td');
+      const wrap = document.querySelector('.mwrap');
+      if(wrap && td){ wrap.scrollLeft = td.offsetLeft - 60; }
+      ta.style.boxShadow = 'inset 0 0 0 2px #6fa8dc';
+      setTimeout(()=>{ ta.style.boxShadow=''; }, 900);
+      // 어느 칸인지 이름으로 안내
+      const c = +ta.dataset.c;
+      const rlabel = ta.dataset.r==='common' ? '공통' : (+ta.dataset.r+1)+'행';
+      const cname = colNames()[c] || ('열'+(c+1));
+      toast(ch.textContent + ' → ' + cname + '(' + rlabel + ') 칸에 추가');
+    } else {
+      toast('먼저 넣을 칸을 한 번 탭하세요');
+    }
+    ch.classList.add('on'); setTimeout(()=>ch.classList.remove('on'),400);
+  });
+});
+
+// 토스트 알림
+let _tt;
+function toast(m){
+  let t = document.getElementById('_toast');
+  if(!t){ t=document.createElement('div'); t.id='_toast';
+    t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);'+
+      'background:#1a2740;color:#8fb4e8;border:1px solid #2d4a6a;border-radius:20px;'+
+      'padding:9px 16px;font-size:12px;z-index:999;opacity:0;transition:opacity .2s;'+
+      'box-shadow:0 4px 16px #0008;max-width:90%;text-align:center';
+    document.body.appendChild(t);
+  }
+  t.textContent = m; t.style.opacity='1';
+  clearTimeout(_tt); _tt=setTimeout(()=>{t.style.opacity='0';},1600);
+}
+
+// ── 행 조절 ──
+$('addRow').addEventListener('click',()=>{ if(ROWS<MAXROWS){ROWS++;preserveRebuild();} });
+$('rmRow').addEventListener('click',()=>{ if(ROWS>MINROWS){ROWS--;preserveRebuild();} });
+function preserveRebuild(){
+  const snap = collect();
+  buildMatrix();
+  restore(snap);
+}
+
+// ── 이미지 슬롯 ──
+const imgs = [null,null,null];
+const slotsEl = $('slots');
+slotsEl.innerHTML = [0,1,2].map(i=>
+  `<div class="slot" data-i="${i}"><span>참고 ${i+1}<br>탭하여 추가</span>
+   <button class="x" data-x="${i}">×</button>
+   <input type="file" accept="image/*" data-f="${i}" style="display:none"></div>`).join('');
+slotsEl.querySelectorAll('.slot').forEach(s=>{
+  const i = s.dataset.i;
+  const file = s.querySelector('input[type=file]');
+  s.addEventListener('click',e=>{ if(e.target.dataset.x===undefined) file.click(); });
+  file.addEventListener('change',()=>{
+    const f = file.files[0]; if(!f) return;
+    const rd = new FileReader();
+    rd.onload = ()=>{
+      imgs[i] = rd.result; // dataURL
+      s.classList.add('has');
+      s.querySelector('span').style.display='none';
+      let im = s.querySelector('img'); if(!im){im=document.createElement('img');s.insertBefore(im,s.querySelector('.x'));}
+      im.src = rd.result;
+    };
+    rd.readAsDataURL(f);
+  });
+  s.querySelector('.x').addEventListener('click',e=>{
+    e.stopPropagation(); imgs[i]=null; s.classList.remove('has');
+    s.querySelector('span').style.display=''; const im=s.querySelector('img'); if(im)im.remove(); file.value='';
+  });
+});
+
+// ── 수집/복원 ──
+function colNames(){
+  return [...hrow.querySelectorAll('input')].map(x=>x.value.trim());
+}
+function collect(){
+  const data = {common:[], rows:[]};
+  data.common = [...brow.querySelectorAll('textarea[data-r="common"]')].map(t=>t.value);
+  for(let r=0;r<ROWS;r++){
+    data.rows.push([...brow.querySelectorAll(`textarea[data-r="${r}"]`)].map(t=>t.value));
+  }
+  return data;
+}
+function restore(d){
+  d.common.forEach((v,i)=>{const t=brow.querySelector(`textarea[data-r="common"][data-c="${i}"]`);if(t)t.value=v;});
+  d.rows.forEach((row,r)=>row.forEach((v,i)=>{const t=brow.querySelector(`textarea[data-r="${r}"][data-c="${i}"]`);if(t)t.value=v;}));
+}
+
+// ── 프롬프트 조립 ──
+function buildPrompts(){
+  const cols = colNames();
+  const d = collect();
+  const suffix = $('suffix').value.trim();
+  const out = [];
+  for(let r=0;r<ROWS;r++){
+    const parts = [];
+    for(let c=0;c<cols.length;c++){
+      // 개별값 우선, 없으면 공통값
+      const v = (d.rows[r][c]||'').trim() || (d.common[c]||'').trim();
+      if(v) parts.push(v);
+    }
+    let p = parts.join(', ');
+    if(suffix) p += (p ? ', ' : '') + suffix;
+    if(p.trim()) out.push(p.trim());
+  }
+  return out;
+}
+
+// ── 미리보기 ──
+$('prev').addEventListener('click',()=>{
+  const ps = buildPrompts();
+  const pv = $('preview');
+  if(ps.length===0){ pv.className='on'; pv.textContent='입력된 내용이 없습니다.'; return; }
+  pv.className='on';
+  pv.innerHTML = ps.map((p,i)=>`<b>${i+1}.</b> ${p}`).join('\n\n');
+});
+
+// ── 비우기 ──
+$('clear').addEventListener('click',()=>{
+  brow.querySelectorAll('textarea').forEach(t=>t.value='');
+  $('preview').className=''; $('msg').className='';
+});
+
+// ── 전송 ──
+function show(t,m){ const e=$('msg'); e.className=t; e.textContent=m; }
+$('go').addEventListener('click', async ()=>{
+  const prompts = buildPrompts();
+  if(prompts.length===0) return show('err','최소 한 행 이상 입력하세요.');
+
+  const refs = imgs.filter(x=>x); // dataURL 배열
+
+  const btn=$('go'); btn.disabled=true; btn.textContent='전송 중...';
+  show('wait','요청을 보내는 중입니다...');
+
+  try{
+    const res = await fetch(WEBHOOK_URL,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ places: prompts, refs: refs })
+    });
+    if(!res.ok) throw new Error('서버 응답 '+res.status);
+    const data = await res.json().catch(()=>({}));
+    show('ok','✅ 접수되었습니다 ('+(data.count||prompts.length)+'장)'+
+      (refs.length?('\n참고 이미지 '+refs.length+'개 적용'):'')+
+      '\n\n텔레그램으로 순차 전송됩니다.\n약 '+Math.ceil(prompts.length*0.8)+'~'+prompts.length+'분 소요.');
+  }catch(err){
+    show('err','❌ 전송 실패\n'+err.message+'\n\n웹훅 주소와 워크플로우 활성화를 확인하세요.');
+  }finally{
+    btn.disabled=false; btn.textContent='이미지 생성 요청';
+  }
+});
+</script>
+</body>
+</html>
